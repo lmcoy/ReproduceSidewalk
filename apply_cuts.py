@@ -1,72 +1,93 @@
 
 import re
-import commands
+import subprocess
 import math
 import os
+import sys
 
 lhcoanalysis='/home/lo/Devel/workspace/LHCOAnalysis/build/src/LHCOAnalysis'
 MADGRAPH_PATH='/home/lo/Source/testmad/MadGraph5_v1_4_7'
 pb = 1000.0
 
-def CalculateDeltaB(filename, cross_section, lumi):
-	print "Calculating number of background events:"
-	N = lumi*cross_section
-	result = {}
+def CalculateDeltaB(lumi):
+	print ("Calculating number of background events:")
+	N_bkg = {}
+# specify which backgrounds are used
 	models = []
-	models.append( ("SIMPLIFIED_tt", "run_04", 45.04*pb) )
+	models.append( ("SIMPLIFIED_ttbar_matched", "run_02", 96.4*pb) )
 	models.append( ("SIMPLIFIED_wj", "run_02", 1.45*10000.0*pb) )
 	models.append( ("SIMPLIFIED_zj", "run_02", 4918.0*pb) )
 	models.append( ("SIMPLIFIED_wbb", "run_02", 151.1*pb) )
 	models.append( ("SIMPLIFIED_zbb", "run_02", 239.8*pb) )
+	models.append( ("SIMPLIFIED_bb_matched", "run_01", 2.306e8*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "run_01", 1.974e7*pb) )
 	for model in models:
-		print "  using background %s with sigma = %f fb" % (model[0],model[2])
+		print ("  using background %s with sigma = %f fb" % (model[0],model[2]))
+# number of events
 		N = lumi*model[2]
-		for jmult in range(2,5):
-			for met in range(100,600,50):
-				for ht in range(met,1200,50):
-					epsilon = GetEpsilon( '%s/%s/Events/%s/tag_1_pgs_events.lhco.gz' %(MADGRAPH_PATH,model[0],model[1]), jmult, ht, met )
-					prev = 0.0
-					if (jmult,met,ht) in result:
-						prev = result[(jmult,met,ht)]
-					result[(jmult,met,ht)] = epsilon*N + prev
+		epsilon_list = []
+# calculate cut efficiencies and store them in a list 
+		for jmult in [2,3,4]:
+			epsilons = applyMETHTcuts( '%s/%s/Events/%s/tag_1_pgs_events.lhco.gz' %(MADGRAPH_PATH,model[0],model[1]), jmult )
+			epsilon_list.append(epsilons)
 
-	for key in result:
-		result[key] = 2.0*math.sqrt( (0.3*result[key])**2 + result[key] )
+# calculate number of background events from efficiencies
+		for epsilons in epsilon_list:
+			for key in epsilons:
+				prev = 0.0
+				if key in N_bkg:
+					prev = N_bkg[key]
+				N_bkg[key] = prev + N*epsilons[key]
+
+
+# calculate 2-sigma fluctuations for each cuts
+	result = {}
+	for key in N_bkg:
+		result[key] = 2.0*math.sqrt( (0.3*N_bkg[key])**2 + N_bkg[key] )
 
 	return result
 
+def applyMETHTcuts(lhcofile, jmult):
+	result = {}
+	for met in range(100,600,200):
+		for ht in range(met,1200,200):
+			sys.stdout.write("\r  jet multiplicity = %d, MET > %f, HT > %f" %(jmult,met,ht) )
+			sys.stdout.flush()
+			epsilon = GetEpsilon( lhcofile, jmult, ht, met )
+			result[(jmult,met,ht)] = epsilon 
+	sys.stdout.write("\r")
+	sys.stdout.flush()
+	return result
 
 def GetEpsilon(filename,jmult,ht,met):
-	out = commands.getoutput("zcat %s | %s --jet_mult %d --min_ht %f --min_met %f | grep 'efficiency' | awk '{print $2}'" %(filename,lhcoanalysis,jmult,ht,met))
+	out = subprocess.check_output(["zcat %s | %s --jet_mult %d --min_ht %f --min_met %f | grep 'efficiency' | awk '{print $2}'" %(filename,lhcoanalysis,jmult,ht,met)],shell=True)
 	epsilon = float(out)
 	return epsilon
 
 def ApplyCuts():
-	print "Applying cuts for simplified model:"
+	print ("Applying cuts for simplified model:")
 	model="SIMPLIFIED_GLUINO_PRODUCTION"
 	dirlist = os.listdir('%s/%s/Events/' % (MADGRAPH_PATH,model) )
 	result = {}
 	for fname in dirlist:
+# search for all simulated models
 		masses = re.match( "mgluino([0-9]+)_mlsp([0-9]+)",fname )
 		if masses:
 			m_gluino = float(masses.group(1))
 			m_lsp = float(masses.group(2))
-			eps_table = {}
-			print "  using m_gluino = %f, m_lsp = %f:" % (m_gluino, m_lsp)
-			for jmult in range(2,5):
-				for met in range(100,600,50):
-					for ht in range(met,1200,50):
-						epsilon = GetEpsilon( '%s/%s/Events/%s/tag_1_pgs_events.lhco.gz' %(MADGRAPH_PATH,model,fname), jmult, ht, met )
-						eps_table[(jmult,met,ht)] = epsilon
-#						print "%d %f %f %f" % (jmult,met,ht,epsilon)
+			print ("  using m_gluino = %f, m_lsp = %f:" % (m_gluino, m_lsp))
+			for jmult in [2,3,4]:
+				eps_table = applyMETHTcuts('%s/%s/Events/%s/tag_1_pgs_events.lhco.gz' %(MADGRAPH_PATH,model,fname), jmult)
 			result[(m_gluino,m_lsp)] = eps_table
 	return result
 
 	
 
 if __name__ == '__main__':
-	model="SIMPLIFIED_tt"
-	deltaB = CalculateDeltaB('%s/%s/Events/run_01/tag_1_pgs_events.lhco.gz' %(MADGRAPH_PATH,model), 554.5*pb, 1.0)
+	deltaB = CalculateDeltaB(1.0)
+	print ("results from background:")
+	for key in deltaB:
+		print ("    jet mult = %d, MET > %f, HT > %f: %d" % (key[0], key[1], key[2], deltaB[key]))
 	efficiencies = ApplyCuts()
 	for masses in efficiencies:
 		best_s = 1000000000000.0
@@ -79,9 +100,11 @@ if __name__ == '__main__':
 			s = 1000000000.0
 			if eps != 0.0 and dB != 0.0:
 				s = dB/eps
+		#	if dB == 0.0 and eps != 0.0:
+		#		print ("    warning: m_gluino = %f, m_lsp = %f: eps = %f and dB = %f" % (masses[0], masses[1], eps, dB))
 			if s < best_s:
 				best_s = s
 				j = cuts[0]
 				MET = cuts[1]
 				HT = cuts[2]
-		print "m_gluino = %f m_lsp = %f s*B = %f fb (jet_mult = %d, MET > %f, HT > %f) " % (masses[0], masses[1], best_s, j, MET, HT)
+		print ("m_gluino = %f m_lsp = %f s*B = %f fb (jet_mult = %d, MET > %f, HT > %f) " % (masses[0], masses[1], best_s, j, MET, HT))
