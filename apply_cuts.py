@@ -1,15 +1,21 @@
-
 import re
 import subprocess
 import math
 import os
 import sys
 
+# path to lhcoanalysis binary (https://github.com/lmcoy/LHCOAnalysis)
 lhcoanalysis='/home/lo/Devel/workspace/LHCOAnalysis/build/src/LHCOAnalysis'
+# path to MadGraph
 MADGRAPH_PATH='/home/lo/Source/testmad/MadGraph5_v1_4_7'
+# convert cross section from pb to fb e.g. x = 1.0*pb = 1000.0 [fb] 
 pb = 1000.0
 
 def CalculateDeltaB(lumi):
+	"""" Calcluates Delta B 2 sigma from backgrounds 
+	
+	Returns a dict with (jet_mult, met, ht) from cuts as key and Delta B 2sigma as entry.
+	"""
 	print ("Calculating number of background events:")
 	N_bkg = {}
 # specify which backgrounds are used
@@ -20,7 +26,14 @@ def CalculateDeltaB(lumi):
 	models.append( ("SIMPLIFIED_wbb", "run_02", 151.1*pb) )
 	models.append( ("SIMPLIFIED_zbb", "run_02", 239.8*pb) )
 	models.append( ("SIMPLIFIED_bb_matched", "run_01", 2.306e8*pb) )
-	models.append( ("SIMPLIFIED_jjjj", "run_01", 1.974e7*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j11", 2.36e5*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j21", 485.2*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j12", 9.759e4*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j22", 1.373e4*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j32", 6.648*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j13", 6121*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j23", 345.9*pb) )
+	models.append( ("SIMPLIFIED_jjjj", "j14", 186.7*pb) )
 	for model in models:
 		print ("  using background %s with sigma = %f fb" % (model[0],model[2]))
 # number of events
@@ -48,18 +61,25 @@ def CalculateDeltaB(lumi):
 	return result
 
 def applyMETHTcuts(lhcofile, jmult):
+	""" Does the MET and HT cuts.
+
+        loops over different MET and HT cuts and returns a dict with the various epsilons.
+	"""
 	result = {}
-	for met in range(100,600,200):
-		for ht in range(met,1200,200):
-			sys.stdout.write("\r  jet multiplicity = %d, MET > %f, HT > %f" %(jmult,met,ht) )
+	for met in range(100,600,100):
+		for ht in range(met,1200,100):
+			sys.stdout.write("\r    jet multiplicity = %d, MET > %f, HT > %f" %(jmult,met,ht) )
 			sys.stdout.flush()
 			epsilon = GetEpsilon( lhcofile, jmult, ht, met )
 			result[(jmult,met,ht)] = epsilon 
 	sys.stdout.write("\r")
+	sys.stdout.write( " "*80 )
+	sys.stdout.write( "\n" )
 	sys.stdout.flush()
 	return result
 
 def GetEpsilon(filename,jmult,ht,met):
+	""" Starts LHCOAnalysis and gets the epsilons """
 	out = subprocess.check_output(["zcat %s | %s --jet_mult %d --min_ht %f --min_met %f | grep 'efficiency' | awk '{print $2}'" %(filename,lhcoanalysis,jmult,ht,met)],shell=True)
 	epsilon = float(out)
 	return epsilon
