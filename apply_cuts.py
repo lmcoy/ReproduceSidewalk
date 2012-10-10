@@ -20,11 +20,21 @@ def CalculateDeltaB(lumi):
 	N_bkg = {}
 # specify which backgrounds are used
 	models = []
-	models.append( ("SIMPLIFIED_ttbar_matched", "run_02", 96.4*pb) )
-	models.append( ("SIMPLIFIED_wj", "run_02", 1.45*10000.0*pb) )
-	models.append( ("SIMPLIFIED_zj", "run_02", 4918.0*pb) )
-	models.append( ("SIMPLIFIED_wbb", "run_02", 151.1*pb) )
-	models.append( ("SIMPLIFIED_zbb", "run_02", 239.8*pb) )
+	models.append( ("SIMPLIFIED_ttbar_matched_c", "sample2", 10.04*pb) )
+	models.append( ("SIMPLIFIED_ttbar_matched_c", "sample1_correct", 85.56*pb) )
+	models.append( ("SIMPLIFIED_ttbar_matched_c", "sample3", 2.881*pb) )
+	models.append( ("SIMPLIFIED_wj_c", "sample1", 1.576*10000.0*pb) )
+	models.append( ("SIMPLIFIED_wj_c", "sample2", 26.91*pb) )
+	models.append( ("SIMPLIFIED_wj_c", "sample3", 5.071*pb) )
+	models.append( ("SIMPLIFIED_zj_c", "sample1", 4913.0*pb) )
+	models.append( ("SIMPLIFIED_zj_c", "sample2", 11.06*pb) )
+	models.append( ("SIMPLIFIED_zj_c", "sample3", 2.008*pb) )
+	models.append( ("SIMPLIFIED_wbb_c", "sample1", 160.8*pb) )
+	models.append( ("SIMPLIFIED_wbb_c", "sample2", 0.1883*pb) )
+	models.append( ("SIMPLIFIED_wbb_c", "sample3", 0.04301*pb) )
+	models.append( ("SIMPLIFIED_zbb_c", "sample1", 239.8*pb) )
+	models.append( ("SIMPLIFIED_zbb_c", "sample2", 0.1742*pb) )
+	models.append( ("SIMPLIFIED_zbb_c", "sample3", 0.03333*pb) )
 	models.append( ("SIMPLIFIED_bb_matched", "run_01", 2.306e8*pb) )
 	models.append( ("SIMPLIFIED_jjjj", "j11", 2.36e5*pb) )
 	models.append( ("SIMPLIFIED_jjjj", "j21", 485.2*pb) )
@@ -35,7 +45,7 @@ def CalculateDeltaB(lumi):
 	models.append( ("SIMPLIFIED_jjjj", "j23", 345.9*pb) )
 	models.append( ("SIMPLIFIED_jjjj", "j14", 186.7*pb) )
 	for model in models:
-		print ("  using background %s with sigma = %f fb" % (model[0],model[2]))
+		print ("  using background %s (%s) with sigma = %.1f fb" % (model[0],model[1],model[2]))
 # number of events
 		N = lumi*model[2]
 		epsilon_list = []
@@ -66,15 +76,15 @@ def applyMETHTcuts(lhcofile, jmult):
         loops over different MET and HT cuts and returns a dict with the various epsilons.
 	"""
 	result = {}
-	for met in range(100,600,100):
-		for ht in range(met,1200,100):
+	for met in range(100,600,200):
+		for ht in range(met,1000,200):
 			sys.stdout.write("\r    jet multiplicity = %d, MET > %f, HT > %f" %(jmult,met,ht) )
 			sys.stdout.flush()
 			epsilon = GetEpsilon( lhcofile, jmult, ht, met )
 			result[(jmult,met,ht)] = epsilon 
 	sys.stdout.write("\r")
 	sys.stdout.write( " "*80 )
-	sys.stdout.write( "\n" )
+	sys.stdout.write( "\r" )
 	sys.stdout.flush()
 	return result
 
@@ -107,7 +117,7 @@ if __name__ == '__main__':
 	deltaB = CalculateDeltaB(1.0)
 	print ("results from background:")
 	for key in deltaB:
-		print ("    jet mult = %d, MET > %f, HT > %f: %d" % (key[0], key[1], key[2], deltaB[key]))
+		print ("    jet mult = %d, MET > %6.1f, HT > %6.1f: %e" % (key[0], key[1], key[2], deltaB[key]))
 	efficiencies = ApplyCuts()
 	for masses in efficiencies:
 		best_s = 1000000000000.0
@@ -127,4 +137,4 @@ if __name__ == '__main__':
 				j = cuts[0]
 				MET = cuts[1]
 				HT = cuts[2]
-		print ("m_gluino = %f m_lsp = %f s*B = %f fb (jet_mult = %d, MET > %f, HT > %f) " % (masses[0], masses[1], best_s, j, MET, HT))
+		print ("m_gluino = %.1f m_lsp = %.1f s*B = %8.1f fb (jet_mult = %d, MET > %.1f, HT > %.1f) " % (masses[0], masses[1], best_s, j, MET, HT))
