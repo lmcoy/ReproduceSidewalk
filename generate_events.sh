@@ -153,7 +153,7 @@ do
 	for (( M_LSP=$M_LSP_MIN ; M_LSP < $M_GLUINO; M_LSP+=$M_LSP_STEP ))
 	do
 		# use specific pythia card: IMSS(22)=24 should be in it to read in the decay tables from slha file
-		cp $PYTHIA_CARD_TEMPLATE $OUTPUT/Cards/pythia_card.dat
+		cp $PYTHIA_CARD_TEMPLATE $OUTPUT/$MODEL_PATH/Cards/pythia_card.dat
 		# copy run_card
 		cp $RUN_CARD_TEMPLATE $OUTPUT/$MODEL_PATH/Cards/run_card.dat
 		# insert the gluino, lsp and chargino mass into the param_card
