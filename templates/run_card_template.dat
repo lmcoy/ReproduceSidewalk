@@ -30,7 +30,7 @@
 # Warning: Do not generate more than 1M events in a single run       *
 # If you want to run Pythia, avoid more than 50k events in a run.    *
 #*********************************************************************
-  10000 = nevents ! Number of unweighted events requested 
+  50000 = nevents ! Number of unweighted events requested 
       0       = iseed   ! rnd seed (0=assigned automatically=default))
 #*********************************************************************
 # Collider type and energy                                           *
@@ -60,7 +60,7 @@
 #*********************************************************************
 # Matching - Warning! ickkw > 1 is still beta
 #*********************************************************************
- 0        = ickkw            ! 0 no matching, 1 MLM, 2 CKKW matching
+ 1        = ickkw            ! 0 no matching, 1 MLM, 2 CKKW matching
  1        = highestmult      ! for ickkw=2, highest mult group
  1        = ktscheme         ! for ickkw=1, 1 Durham kT, 2 Pythia pTE
  1        = alpsfact         ! scale factor for QCD emission vx
@@ -96,7 +96,7 @@
 #*********************************************************************
 # Minimum and maximum pt's                                           *
 #*********************************************************************
- 20  = ptj       ! minimum pt for the jets 
+  0  = ptj       ! minimum pt for the jets 
   0  = ptb       ! minimum pt for the b 
  10  = pta       ! minimum pt for the photons 
  10  = ptl       ! minimum pt for the charged leptons 
@@ -134,7 +134,7 @@
 #*********************************************************************
 # Minimum and maximum DeltaR distance                                *
 #*********************************************************************
- 0.4 = drjj    ! min distance between jets 
+ 0   = drjj    ! min distance between jets 
  0   = drbb    ! min distance between b's 
  0.4 = drll    ! min distance between leptons 
  0.4 = draa    ! min distance between gammas 
@@ -231,5 +231,5 @@
 #*********************************************************************
 # Jet measure cuts                                                   *
 #*********************************************************************
- 0   = xqcut   ! minimum kt jet measure between partons
+ 30   = xqcut   ! minimum kt jet measure between partons
 #*********************************************************************

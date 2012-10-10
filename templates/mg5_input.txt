@@ -1,0 +1,4 @@
+import mssm
+generate p p > go go @0
+add process p p > go go j @1
+add process p p > go go j j @2

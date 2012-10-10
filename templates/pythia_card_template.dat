@@ -14,3 +14,9 @@
 
 !...Don't stop execution after 10 errors
       MSTU(21)=1
+
+!...Cutoff in jet measure for matching
+      QCUT = 100
+
+!...This switches from kT-MLM to shower-kT matching
+      SHOWERKT = T
